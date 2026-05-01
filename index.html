@@ -221,8 +221,17 @@
       animation: screen-in 420ms ease forwards;
     }
 
+    .screen[hidden] {
+      display: none !important;
+    }
+
     .screen.active {
       display: block;
+    }
+
+    .screen-stack {
+      display: grid;
+      gap: 22px;
     }
 
     @keyframes screen-in {
@@ -1008,48 +1017,49 @@
 </head>
 <body>
   <main class="app-shell">
-    <header class="hero">
-      <div class="eyebrow">TruthLens | Decision-support for news readers</div>
-      <h1>See how credible a story really looks.</h1>
-      <p>
-        TruthLens is a single-file news credibility checker. Paste an article URL and its full text,
-        then watch the article move through domain trust, simulated multi-source verification,
-        clickbait detection, and fact-signal analysis before a final score is issued.
-      </p>
-      <div class="hero-metrics">
-        <div class="metric-pill">0-100 credibility score</div>
-        <div class="metric-pill">21 clickbait triggers scanned</div>
-        <div class="metric-pill">Transparent decision log</div>
-      </div>
-    </header>
+    <section class="screen active" id="screen-input" aria-hidden="false">
+      <div class="screen-stack">
+        <header class="hero">
+          <div class="eyebrow">TruthLens | Decision-support for news readers</div>
+          <h1>See how credible a story really looks.</h1>
+          <p>
+            TruthLens is a single-file news credibility checker. Paste an article URL and its full text,
+            then watch the article move through domain trust, simulated multi-source verification,
+            clickbait detection, and fact-signal analysis before a final score is issued.
+          </p>
+          <div class="hero-metrics">
+            <div class="metric-pill">0-100 credibility score</div>
+            <div class="metric-pill">21 clickbait triggers scanned</div>
+            <div class="metric-pill">Transparent decision log</div>
+          </div>
+        </header>
 
-    <section class="progress-rail" aria-label="TruthLens progress">
-      <div class="progress-card active" data-progress="1">
-        <div class="step-index">1</div>
-        <div>
-          <strong>Input</strong>
-          <span>Paste the source URL and article text</span>
-        </div>
-      </div>
-      <div class="progress-card" data-progress="2">
-        <div class="step-index">2</div>
-        <div>
-          <strong>Verification</strong>
-          <span>Watch each scoring module run live</span>
-        </div>
-      </div>
-      <div class="progress-card" data-progress="3">
-        <div class="step-index">3</div>
-        <div>
-          <strong>Report</strong>
-          <span>Review the score and full reasoning</span>
-        </div>
-      </div>
-    </section>
+        <section class="progress-rail" aria-label="TruthLens progress">
+          <div class="progress-card active" data-progress="1">
+            <div class="step-index">1</div>
+            <div>
+              <strong>Input</strong>
+              <span>Paste the source URL and article text</span>
+            </div>
+          </div>
+          <div class="progress-card" data-progress="2">
+            <div class="step-index">2</div>
+            <div>
+              <strong>Verification</strong>
+              <span>Watch each scoring module run live</span>
+            </div>
+          </div>
+          <div class="progress-card" data-progress="3">
+            <div class="step-index">3</div>
+            <div>
+              <strong>Report</strong>
+              <span>Review the score and full reasoning</span>
+            </div>
+          </div>
+        </section>
 
-    <section class="screen active" id="screen-input">
-      <div class="grid-2">
-        <section class="panel">
+        <div class="grid-2">
+          <section class="panel">
           <div class="panel-head">
             <h2>Check an article</h2>
             <p>Paste the article URL and the full article text. TruthLens works best when it can inspect the entire article, not just the headline.</p>
@@ -1074,9 +1084,9 @@
             </div>
             <p id="form-message" class="message" aria-live="polite"></p>
           </form>
-        </section>
+          </section>
 
-        <aside class="panel">
+          <aside class="panel">
           <div class="panel-head">
             <h2>What this build does</h2>
             <p>The checker mirrors the product flow you described: one file, no setup, three screens, transparent scoring, and clear disclosures about its limitations.</p>
@@ -1113,11 +1123,12 @@
           <div class="disclosure-box">
             TruthLens does not browse the live web in this standalone build. Cross-source verification is a simulated judgment based on article content, topic fit, and factual specificity. It is meant to support human judgment, not replace it.
           </div>
-        </aside>
+          </aside>
+        </div>
       </div>
     </section>
 
-    <section class="screen" id="screen-processing">
+    <section class="screen" id="screen-processing" hidden aria-hidden="true">
       <section class="panel processing-layout">
         <div class="processing-hero">
           <div class="status-card">
@@ -1152,7 +1163,7 @@
       </section>
     </section>
 
-    <section class="screen" id="screen-results">
+    <section class="screen" id="screen-results" hidden aria-hidden="true">
       <div class="results-layout">
         <section class="panel summary-card">
           <div class="verdict-pill medium" id="verdict-pill">Medium Credibility</div>
@@ -1899,15 +1910,31 @@ Doctors at Safdarjung Hospital in New Delhi said dehydration and heatstroke admi
         topics: detectTopics(cleanText)
       };
     }
+
     function setActiveScreen(screenNumber) {
+      const screens = [
+        elements.screenInput,
+        elements.screenProcessing,
+        elements.screenResults
+      ];
+
       elements.progressCards.forEach((card, index) => {
         card.classList.toggle("active", index + 1 === screenNumber);
         card.classList.toggle("done", index + 1 < screenNumber);
       });
 
-      elements.screenInput.classList.toggle("active", screenNumber === 1);
-      elements.screenProcessing.classList.toggle("active", screenNumber === 2);
-      elements.screenResults.classList.toggle("active", screenNumber === 3);
+      screens.forEach((screen, index) => {
+        const isActive = index + 1 === screenNumber;
+        screen.classList.toggle("active", isActive);
+        screen.hidden = !isActive;
+        screen.setAttribute("aria-hidden", String(!isActive));
+
+        if ("inert" in screen) {
+          screen.inert = !isActive;
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
 
     function renderPipeline() {
@@ -2174,7 +2201,6 @@ Doctors at Safdarjung Hospital in New Delhi said dehydration and heatstroke admi
 
     elements.newCheck.addEventListener("click", () => {
       setActiveScreen(1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
     elements.copyReport.addEventListener("click", async () => {
@@ -2192,6 +2218,7 @@ Doctors at Safdarjung Hospital in New Delhi said dehydration and heatstroke admi
     });
 
     renderPipeline();
+    setActiveScreen(1);
   </script>
 </body>
 </html>
