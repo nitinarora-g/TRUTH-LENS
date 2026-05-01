@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TruthLens | News Credibility Checker</title>
+  <style>
+    :root {
+      --bg: #f6efe6;
+      --ink: #18120f;
+      --muted: #64544a;
+      --surface: rgba(255, 251, 246, 0.78);
+      --surface-strong: rgba(255, 251, 246, 0.92);
+      --border: rgba(91, 58, 39, 0.16);
+      --shadow: 0 24px 64px rgba(44, 24, 12, 0.14);
+      --accent: #b13c19;
+      --accent-deep: #7f2410;
+      --accent-soft: #f6c17a;
+      --success: #1f8a5f;
+      --warning: #bc7e19;
+      --danger: #b4281d;
+      --danger-soft: rgba(180, 40, 29, 0.12);
+      --success-soft: rgba(31, 138, 95, 0.12);
+      --warning-soft: rgba(188, 126, 25, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --font-display: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      --font-body: "Aptos", "Segoe UI Variable Text", "Trebuchet MS", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(246, 193, 122, 0.34), transparent 32%),
+        radial-gradient(circle at top right, rgba(177, 60, 25, 0.12), transparent 26%),
+        linear-gradient(180deg, #fff9f2 0%, #f7efe6 48%, #f2e4d7 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(24, 18, 15, 0.018) 0,
+          rgba(24, 18, 15, 0.018) 1px,
+          transparent 1px,
+          transparent 22px
+        );
+      mix-blend-mode: multiply;
+      opacity: 0.28;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 28px auto 56px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      padding: 34px;
+      border-radius: calc(var(--radius-xl) + 8px);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 248, 0.95), rgba(255, 247, 235, 0.88)),
+        radial-gradient(circle at top right, rgba(246, 193, 122, 0.26), transparent 46%);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(177, 60, 25, 0.16), transparent 68%);
+      right: -90px;
+      top: -120px;
+      filter: blur(6px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(177, 60, 25, 0.08);
+      border: 1px solid rgba(177, 60, 25, 0.16);
+      color: var(--accent-deep);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .hero h1 {
+      margin: 0;
+      max-width: 10ch;
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 4.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+
+    .hero-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(91, 58, 39, 0.12);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .progress-rail {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .progress-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: rgba(255, 250, 243, 0.82);
+      box-shadow: 0 12px 28px rgba(44, 24, 12, 0.08);
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .progress-card.active {
+      border-color: rgba(177, 60, 25, 0.36);
+      background: rgba(255, 246, 235, 0.96);
+      transform: translateY(-1px);
+    }
+
+    .progress-card.done .step-index {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .step-index {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      background: rgba(24, 18, 15, 0.08);
+      color: var(--ink);
+    }
+
+    .progress-card strong {
+      display: block;
+      font-size: 0.98rem;
+    }
+
+    .progress-card span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .screen {
+      display: none;
+      opacity: 0;
+      transform: translateY(14px);
+      animation: screen-in 420ms ease forwards;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes screen-in {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      gap: 20px;
+    }
+
+    .panel {
+      border-radius: var(--radius-xl);
+      padding: 26px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      letter-spacing: -0.03em;
+    }
+
+    .panel-head {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    form {
+      display: grid;
+      gap: 18px;
+    }
+
+    label {
+      display: grid;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin: 0;
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(91, 58, 39, 0.16);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(177, 60, 25, 0.42);
+      box-shadow: 0 0 0 4px rgba(177, 60, 25, 0.12);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    textarea {
+      min-height: 300px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .form-actions,
+    .inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      padding: 13px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, color 140ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button:disabled {
+      cursor: progress;
+      opacity: 0.72;
+      transform: none;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      box-shadow: 0 16px 28px rgba(177, 60, 25, 0.22);
+    }
+
+    .button.secondary {
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(91, 58, 39, 0.14);
+      color: var(--ink);
+    }
+
+    .button.ghost {
+      background: transparent;
+      border: 1px dashed rgba(91, 58, 39, 0.22);
+      color: var(--muted);
+    }
+
+    .message {
+      min-height: 1.2em;
+      margin: 0;
+      font-size: 0.96rem;
+      color: var(--muted);
+    }
+
+    .message.error {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .feature-card,
+    .score-card,
+    .fact-card {
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(91, 58, 39, 0.12);
+    }
+
+    .feature-card strong,
+    .score-card strong,
+    .fact-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.98rem;
+    }
+
+    .feature-card p,
+    .score-card p,
+    .fact-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .score-system {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(91, 58, 39, 0.11);
+      font-size: 0.92rem;
+    }
+
+    .score-row em {
+      font-style: normal;
+      color: var(--muted);
+    }
+
+    .disclosure-box {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(188, 126, 25, 0.08);
+      border: 1px solid rgba(188, 126, 25, 0.18);
+      color: #6d5016;
+      line-height: 1.6;
+      font-size: 0.93rem;
+    }
+    .processing-layout,
+    .results-layout {
+      display: grid;
+      gap: 20px;
+    }
+
+    .processing-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .status-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(91, 58, 39, 0.12);
+    }
+
+    .status-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .status-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .live-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(31, 138, 95, 0.1);
+      color: var(--success);
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .live-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 0 rgba(31, 138, 95, 0.32);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(31, 138, 95, 0.32);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(31, 138, 95, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(31, 138, 95, 0);
+      }
+    }
+
+    .score-orb {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border-radius: var(--radius-xl);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(246, 193, 122, 0.64), transparent 36%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 241, 223, 0.82));
+      border: 1px solid rgba(177, 60, 25, 0.14);
+      text-align: center;
+    }
+
+    .score-orb strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 3.6rem;
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+    }
+
+    .score-orb span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 11px;
+      border-radius: 999px;
+      background: rgba(24, 18, 15, 0.08);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+      transition: width 260ms ease;
+    }
+
+    .pipeline {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .pipeline-step {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid rgba(91, 58, 39, 0.11);
+      transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+    }
+
+    .pipeline-step.active {
+      background: rgba(255, 247, 238, 0.98);
+      border-color: rgba(177, 60, 25, 0.28);
+      transform: translateX(3px);
+    }
+
+    .pipeline-step.done .pipeline-icon {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .pipeline-step.active .pipeline-icon {
+      background: rgba(177, 60, 25, 0.1);
+      color: var(--accent);
+    }
+
+    .pipeline-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(24, 18, 15, 0.08);
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .pipeline-meta strong {
+      display: block;
+    }
+
+    .pipeline-meta span,
+    .pipeline-status {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .log-panel {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: #161210;
+      color: #f7f0e6;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .log-panel h3 {
+      margin-bottom: 12px;
+      font-size: 1rem;
+      color: #fff6ea;
+    }
+
+    .log-stream {
+      max-height: 260px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      font-family: "Consolas", "Cascadia Mono", monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .log-time {
+      color: #f6c17a;
+    }
+
+    .log-label {
+      color: #9fd9bf;
+      font-weight: 700;
+    }
+
+    .log-line.warn .log-label {
+      color: #ffca76;
+    }
+
+    .log-line.danger .log-label {
+      color: #ff9e94;
+    }
+
+    .results-layout {
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      align-items: start;
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 18px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .verdict-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+
+    .verdict-pill.high {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .verdict-pill.medium {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .verdict-pill.low {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .summary-score {
+      display: flex;
+      align-items: end;
+      gap: 14px;
+    }
+
+    .summary-score strong {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 10vw, 5rem);
+      line-height: 0.86;
+      letter-spacing: -0.08em;
+    }
+
+    .summary-score span {
+      color: var(--muted);
+      font-weight: 700;
+      padding-bottom: 10px;
+    }
+
+    .summary-text,
+    .subtle {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .chip-row,
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip,
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(91, 58, 39, 0.12);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .source-chip.trusted {
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: rgba(31, 138, 95, 0.18);
+    }
+
+    .source-chip.untrusted {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: rgba(180, 40, 29, 0.18);
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 14px;
+    }
+
+    .breakdown-card {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(91, 58, 39, 0.11);
+    }
+
+    .breakdown-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .breakdown-head strong {
+      font-size: 1rem;
+    }
+
+    .delta {
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .delta.pos {
+      color: var(--success);
+    }
+
+    .delta.neg {
+      color: var(--danger);
+    }
+
+    .delta.neutral {
+      color: var(--muted);
+    }
+
+    .mini-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(24, 18, 15, 0.08);
+      overflow: hidden;
+    }
+
+    .mini-bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    }
+
+    .details-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    details {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      box-shadow: 0 16px 28px rgba(44, 24, 12, 0.08);
+      overflow: hidden;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px 20px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .details-body {
+      padding: 0 20px 20px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .details-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .reason-card {
+      padding: 14px 15px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(91, 58, 39, 0.11);
+    }
+
+    .reason-card.match {
+      border-color: rgba(31, 138, 95, 0.18);
+      background: rgba(31, 138, 95, 0.05);
+    }
+
+    .reason-card.nomatch {
+      border-color: rgba(91, 58, 39, 0.12);
+    }
+
+    .reason-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    .article-highlight {
+      max-height: 420px;
+      overflow: auto;
+      padding: 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(91, 58, 39, 0.11);
+      color: #3a2d26;
+      white-space: pre-wrap;
+    }
+
+    mark.flag-red,
+    mark.flag-amber,
+    mark.flag-green {
+      color: inherit;
+      padding: 0.1em 0.2em;
+      border-radius: 0.35em;
+      font-weight: 700;
+    }
+
+    mark.flag-red {
+      background: rgba(180, 40, 29, 0.18);
+      color: #81211a;
+    }
+
+    mark.flag-amber {
+      background: rgba(188, 126, 25, 0.18);
+      color: #7d5611;
+    }
+
+    mark.flag-green {
+      background: rgba(31, 138, 95, 0.16);
+      color: #1b6e4e;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend i {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .legend .red {
+      background: rgba(180, 40, 29, 0.18);
+    }
+
+    .legend .amber {
+      background: rgba(188, 126, 25, 0.18);
+    }
+
+    .legend .green {
+      background: rgba(31, 138, 95, 0.16);
+    }
+
+    .log-list {
+      display: grid;
+      gap: 10px;
+      font-family: "Consolas", "Cascadia Mono", monospace;
+      font-size: 0.92rem;
+      color: #3a2d26;
+    }
+
+    .log-list .reason-card {
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .empty-state {
+      padding: 14px 15px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px dashed rgba(91, 58, 39, 0.18);
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .grid-2,
+      .results-layout,
+      .processing-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-card {
+        position: static;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .app-shell {
+        width: min(100% - 20px, 1180px);
+        margin-top: 12px;
+      }
+
+      .hero,
+      .panel {
+        padding: 20px;
+      }
+
+      .progress-rail {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-step {
+        grid-template-columns: auto 1fr;
+      }
+
+      .pipeline-status {
+        grid-column: 2;
+      }
+
+      .summary-score {
+        align-items: center;
+      }
+
+      .summary-score strong {
+        font-size: 3.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="eyebrow">TruthLens | Decision-support for news readers</div>
+      <h1>See how credible a story really looks.</h1>
+      <p>
+        TruthLens is a single-file news credibility checker. Paste an article URL and its full text,
+        then watch the article move through domain trust, simulated multi-source verification,
+        clickbait detection, and fact-signal analysis before a final score is issued.
+      </p>
+      <div class="hero-metrics">
+        <div class="metric-pill">0-100 credibility score</div>
+        <div class="metric-pill">21 clickbait triggers scanned</div>
+        <div class="metric-pill">Transparent decision log</div>
+      </div>
+    </header>
+
+    <section class="progress-rail" aria-label="TruthLens progress">
+      <div class="progress-card active" data-progress="1">
+        <div class="step-index">1</div>
+        <div>
+          <strong>Input</strong>
+          <span>Paste the source URL and article text</span>
+        </div>
+      </div>
+      <div class="progress-card" data-progress="2">
+        <div class="step-index">2</div>
+        <div>
+          <strong>Verification</strong>
+          <span>Watch each scoring module run live</span>
+        </div>
+      </div>
+      <div class="progress-card" data-progress="3">
+        <div class="step-index">3</div>
+        <div>
+          <strong>Report</strong>
+          <span>Review the score and full reasoning</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen active" id="screen-input">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Check an article</h2>
+            <p>Paste the article URL and the full article text. TruthLens works best when it can inspect the entire article, not just the headline.</p>
+          </div>
+
+          <form id="credibility-form">
+            <label for="article-url">
+              Article URL
+              <input id="article-url" name="article-url" type="url" placeholder="https://example.com/news-story" autocomplete="off">
+              <p class="hint">The URL is used for source-domain credibility and to identify whether it matches any tracked outlets.</p>
+            </label>
+
+            <label for="article-text">
+              Full article text
+              <textarea id="article-text" name="article-text" placeholder="Paste the article text here..."></textarea>
+              <p class="hint">TruthLens scans named sources, dates, statistics, ALL CAPS usage, vague attribution, punctuation abuse, and clickbait language.</p>
+            </label>
+
+            <div class="form-actions">
+              <button class="button secondary" id="demo-button" type="button">Load demo article</button>
+              <button class="button primary" id="run-button" type="submit">Initiate Credibility Check</button>
+            </div>
+            <p id="form-message" class="message" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-head">
+            <h2>What this build does</h2>
+            <p>The checker mirrors the product flow you described: one file, no setup, three screens, transparent scoring, and clear disclosures about its limitations.</p>
+          </div>
+
+          <div class="feature-list">
+            <div class="feature-card">
+              <strong>AI-style article brief</strong>
+              <p>The checker extracts the likely headline, topic, tone, and keywords before the score is finalized so users understand what the article appears to claim.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Multi-module scoring</strong>
+              <p>Five modules adjust a neutral score of 50: source-domain credibility, cross-source coverage, clickbait language, text quality, and fact indicators.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Only matched sources shown up front</strong>
+              <p>The main report lists only the outlets that appear to match. A deeper panel explains why other sources were not considered a match.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Flagged language in context</strong>
+              <p>Clickbait triggers are highlighted in red, vague attribution in amber, and fact-supporting signals like dates and explicit attribution in green.</p>
+            </div>
+          </div>
+
+          <div class="score-system" aria-label="Scoring system overview">
+            <div class="score-row"><span>Starting score</span><em>50 neutral</em></div>
+            <div class="score-row"><span>Source domain credibility</span><em>up to +/-28</em></div>
+            <div class="score-row"><span>Multi-source coverage</span><em>up to +/-22</em></div>
+            <div class="score-row"><span>Clickbait language</span><em>up to -20</em></div>
+            <div class="score-row"><span>Text quality</span><em>up to +/-16</em></div>
+            <div class="score-row"><span>Fact indicators</span><em>up to +/-20</em></div>
+          </div>
+
+          <div class="disclosure-box">
+            TruthLens does not browse the live web in this standalone build. Cross-source verification is a simulated judgment based on article content, topic fit, and factual specificity. It is meant to support human judgment, not replace it.
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-processing">
+      <section class="panel processing-layout">
+        <div class="processing-hero">
+          <div class="status-card">
+            <div class="status-title">
+              <div>
+                <h2>Live verification pipeline</h2>
+                <p id="processing-summary">TruthLens is preparing the article for analysis.</p>
+              </div>
+              <div class="live-tag">
+                <span class="live-dot" aria-hidden="true"></span>
+                Live
+              </div>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="pipeline" id="pipeline-steps"></div>
+          </div>
+
+          <div class="score-orb">
+            <div>
+              <strong id="live-score">50</strong>
+              <span id="live-score-label">Neutral baseline</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="log-panel">
+          <h3>Decision log</h3>
+          <div class="log-stream" id="live-log" aria-live="polite"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-results">
+      <div class="results-layout">
+        <section class="panel summary-card">
+          <div class="verdict-pill medium" id="verdict-pill">Medium Credibility</div>
+          <div class="summary-score">
+            <strong id="final-score">50</strong>
+            <span>/ 100 credibility score</span>
+          </div>
+          <h2 id="result-headline">Credibility report</h2>
+          <p class="summary-text" id="analysis-brief"></p>
+
+          <div>
+            <h3>Extracted keywords</h3>
+            <div class="chip-row" id="keyword-row"></div>
+          </div>
+
+          <div>
+            <h3>Matched sources</h3>
+            <div class="source-row" id="matched-sources"></div>
+          </div>
+
+          <div class="inline-actions">
+            <button class="button secondary" id="new-check" type="button">Run another check</button>
+            <button class="button ghost" id="copy-report" type="button">Copy report</button>
+          </div>
+
+          <p class="footer-note">
+            High scores do not guarantee truth. Low scores do not automatically prove falsehood. This report surfaces credibility signals so the reader can judge more carefully.
+          </p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Score breakdown</h2>
+            <p>Each module explains how it moved the baseline score before the final verdict was clamped between 0 and 100.</p>
+          </div>
+          <div class="breakdown" id="score-breakdown"></div>
+        </section>
+      </div>
+
+      <div class="details-grid">
+        <details open>
+          <summary>
+            <span>How the score was calculated</span>
+            <span>+</span>
+          </summary>
+          <div class="details-body">
+            <div class="details-stack" id="calculation-detail"></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span>Why sources matched or did not match</span>
+            <span>+</span>
+          </summary>
+          <div class="details-body">
+            <div class="details-stack" id="source-detail"></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span>Flagged language in the article</span>
+            <span>+</span>
+          </summary>
+          <div class="details-body">
+            <div class="legend">
+              <span><i class="red"></i>Clickbait / sensational phrasing</span>
+              <span><i class="amber"></i>Vague attribution</span>
+              <span><i class="green"></i>Fact-supporting signals</span>
+            </div>
+            <div class="article-highlight" id="highlighted-article"></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span>Step-by-step decision log</span>
+            <span>+</span>
+          </summary>
+          <div class="details-body">
+            <div class="log-list" id="final-log"></div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const TRUSTED_DOMAINS = {
+      "bbc.com": { name: "BBC News", score: 26 },
+      "reuters.com": { name: "Reuters", score: 28 },
+      "apnews.com": { name: "AP News", score: 28 },
+      "nytimes.com": { name: "The New York Times", score: 24 },
+      "theguardian.com": { name: "The Guardian", score: 24 },
+      "thehindu.com": { name: "The Hindu", score: 22 },
+      "indianexpress.com": { name: "The Indian Express", score: 22 },
+      "ndtv.com": { name: "NDTV", score: 16 }
+    };
+
+    const UNTRUSTED_DOMAINS = {
+      "viralbuzz24.net": { name: "ViralBuzz24", score: -28 },
+      "breakingalert.info": { name: "BreakingAlert", score: -28 }
+    };
+
+    const SOURCE_CATALOG = [
+      { domain: "bbc.com", name: "BBC News", trust: "trusted", topics: ["world", "politics", "science", "health", "tech", "climate", "conflict"] },
+      { domain: "reuters.com", name: "Reuters", trust: "trusted", topics: ["world", "politics", "business", "markets", "tech", "climate", "conflict"] },
+      { domain: "apnews.com", name: "AP News", trust: "trusted", topics: ["world", "politics", "business", "sports", "conflict", "crime"] },
+      { domain: "nytimes.com", name: "The New York Times", trust: "trusted", topics: ["world", "politics", "business", "health", "culture", "tech", "climate"] },
+      { domain: "theguardian.com", name: "The Guardian", trust: "trusted", topics: ["world", "politics", "climate", "culture", "tech", "health"] },
+      { domain: "thehindu.com", name: "The Hindu", trust: "trusted", topics: ["india", "politics", "policy", "economy", "world", "health"] },
+      { domain: "indianexpress.com", name: "The Indian Express", trust: "trusted", topics: ["india", "politics", "law", "economy", "sports", "cities"] },
+      { domain: "ndtv.com", name: "NDTV", trust: "trusted", topics: ["india", "politics", "world", "tech", "entertainment"] },
+      { domain: "viralbuzz24.net", name: "ViralBuzz24", trust: "untrusted", topics: ["clickbait", "celebrity", "gossip", "conspiracy", "miracle"] },
+      { domain: "breakingalert.info", name: "BreakingAlert", trust: "untrusted", topics: ["clickbait", "crime", "rumor", "celebrity", "mystery"] }
+    ];
+
+    const CLICKBAIT_TERMS = [
+      "shocking",
+      "exposed",
+      "bombshell",
+      "you won't believe",
+      "jaw-dropping",
+      "mind-blowing",
+      "must see",
+      "secret",
+      "miracle",
+      "viral",
+      "scandal",
+      "terrifying",
+      "explosive",
+      "chaos",
+      "stunning",
+      "caught on camera",
+      "what happened next",
+      "doctors hate",
+      "urgent",
+      "truth about",
+      "unbelievable"
+    ];
+
+    const VAGUE_PHRASES = [
+      "experts say",
+      "sources say",
+      "it is believed",
+      "many people say",
+      "reportedly",
+      "insiders claim",
+      "people are saying",
+      "critics say",
+      "observers say"
+    ];
+
+    const ATTRIBUTION_PATTERNS = [
+      "according to",
+      "said",
+      "stated",
+      "told",
+      "announced",
+      "confirmed",
+      "reported",
+      "wrote",
+      "explained"
+    ];
+
+    const DATE_PATTERN = /\b(?:\d{1,2}\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{1,2})?(?:,\s*\d{4})?\b|\b\d{4}\b/gi;
+    const STATS_PATTERN = /\b\d+(?:\.\d+)?(?:%| percent| million| billion| lakh| crore| km| miles| rupees| dollars| people| cases| deaths| votes)\b|\$\d[\d,]*(?:\.\d+)?/gi;
+    const CAPS_PATTERN = /\b[A-Z]{4,}\b/g;
+    const EXCESS_PUNCT_PATTERN = /[!?]{2,}/g;
+
+    const STOPWORDS = new Set([
+      "about","after","again","against","almost","also","among","another","around","because","before","being","between","both",
+      "could","every","first","found","from","further","have","having","here","herself","himself","however","into","itself","least",
+      "might","more","most","other","ourselves","really","shall","should","since","still","such","their","theirs","them","there",
+      "these","they","those","through","under","until","very","what","when","where","which","while","whose","with","would","your",
+      "yours","this","that","then","than","were","was","will","said","says","say","been","being","into","onto","just","than","them",
+      "over","some","many","much","each","only","ever","away","make","made","take","took","told","according","between","within",
+      "about","amid","amidst","near","news","story","article","full","text","paste","from","into","upon","across","here","there",
+      "than","such","same","both","more","less","like","most","many","where","which","those","their","them","they","ours","ourselves",
+      "yourself","your","been","being","without","before","after","while","during","does","did","doing","is","are","was","were","be",
+      "the","and","for","with","that","have","has","had","but","not","you","his","her","she","him","our","out","who","why","how",
+      "can","its","it's","this","these","those","a","an","of","on","in","to","at","by","as","or","if","we","us","he","i","it","so"
+    ]);
+
+    const TOPIC_MAP = {
+      politics: ["election", "minister", "government", "parliament", "president", "cabinet", "party", "policy", "senate", "vote", "law", "prime minister"],
+      world: ["international", "global", "foreign", "embassy", "border", "diplomatic", "nation", "summit", "world"],
+      conflict: ["war", "conflict", "missile", "military", "attack", "ceasefire", "troops", "airstrike", "defence"],
+      business: ["economy", "market", "shares", "revenue", "profit", "company", "trade", "inflation", "investment", "stock"],
+      markets: ["stock", "market", "investors", "shares", "index", "earnings"],
+      tech: ["technology", "software", "startup", "internet", "smartphone", "ai", "artificial intelligence", "chip", "cyber", "data"],
+      health: ["health", "hospital", "vaccine", "disease", "virus", "patient", "doctor", "medical", "outbreak"],
+      science: ["research", "study", "scientist", "space", "nasa", "experiment", "laboratory", "discovery"],
+      climate: ["climate", "weather", "heatwave", "flood", "drought", "emissions", "carbon", "storm", "temperature"],
+      sports: ["match", "tournament", "league", "cricket", "football", "coach", "team", "olympics", "innings"],
+      entertainment: ["film", "actor", "actress", "celebrity", "music", "singer", "box office", "trailer", "streaming"],
+      crime: ["police", "arrest", "court", "fraud", "investigation", "accused", "crime", "charges", "murder"],
+      culture: ["festival", "book", "museum", "art", "culture"],
+      india: ["india", "indian", "delhi", "mumbai", "kolkata", "bengaluru", "chennai", "modi", "rupee", "lok sabha", "rajya sabha"]
+    };
+
+    const PIPELINE_STEPS = [
+      { title: "Normalize article text", description: "Cleaning the article and extracting headline clues." },
+      { title: "Map keywords and topics", description: "Finding names, dates, themes, and likely topic areas." },
+      { title: "Score source-domain credibility", description: "Checking whether the source looks trusted, unknown, or explicitly suspicious." },
+      { title: "Simulate multi-source coverage", description: "Estimating which tracked outlets would likely cover the same story." },
+      { title: "Scan writing quality and fact signals", description: "Flagging clickbait, punctuation abuse, attribution quality, and factual specificity." },
+      { title: "Finalize report", description: "Clamping the score, assigning a verdict, and building the transparency panels." }
+    ];
+
+    const demoArticle = {
+      url: "https://www.thehindu.com/news/national/health-ministry-launches-heatwave-emergency-plan/article00000001.ece",
+      text: `Health Ministry launches emergency heatwave response plan across five Indian states
+
+The Union Health Ministry on Thursday announced a new emergency response plan to support hospitals in Delhi, Rajasthan, Uttar Pradesh, Maharashtra and Telangana as temperatures continue to rise.
+
+According to Health Secretary Rohan Mehta, the government has allocated Rs 120 crore for additional cooling wards, ambulance upgrades and public warning campaigns. The ministry said 3,200 heat-related illness cases were reported in April 2026, compared with 1,870 cases during the same month last year.
+
+The India Meteorological Department said maximum temperatures in several districts crossed 44 degrees Celsius this week. Officials in Jaipur, Nagpur and Hyderabad have been asked to extend clinic hours and publish district-level advisories by 4 May 2026.
+
+Doctors at Safdarjung Hospital in New Delhi said dehydration and heatstroke admissions had increased by nearly 28 percent over the last 10 days. The ministry said state governments will submit daily hospital capacity updates until the current heatwave eases.`
+    };
+
+    const elements = {
+      screenInput: document.getElementById("screen-input"),
+      screenProcessing: document.getElementById("screen-processing"),
+      screenResults: document.getElementById("screen-results"),
+      form: document.getElementById("credibility-form"),
+      articleUrl: document.getElementById("article-url"),
+      articleText: document.getElementById("article-text"),
+      formMessage: document.getElementById("form-message"),
+      runButton: document.getElementById("run-button"),
+      demoButton: document.getElementById("demo-button"),
+      progressCards: Array.from(document.querySelectorAll(".progress-card")),
+      processingSummary: document.getElementById("processing-summary"),
+      progressFill: document.getElementById("progress-fill"),
+      pipelineSteps: document.getElementById("pipeline-steps"),
+      liveScore: document.getElementById("live-score"),
+      liveScoreLabel: document.getElementById("live-score-label"),
+      liveLog: document.getElementById("live-log"),
+      verdictPill: document.getElementById("verdict-pill"),
+      finalScore: document.getElementById("final-score"),
+      resultHeadline: document.getElementById("result-headline"),
+      analysisBrief: document.getElementById("analysis-brief"),
+      keywordRow: document.getElementById("keyword-row"),
+      matchedSources: document.getElementById("matched-sources"),
+      scoreBreakdown: document.getElementById("score-breakdown"),
+      calculationDetail: document.getElementById("calculation-detail"),
+      sourceDetail: document.getElementById("source-detail"),
+      highlightedArticle: document.getElementById("highlighted-article"),
+      finalLog: document.getElementById("final-log"),
+      newCheck: document.getElementById("new-check"),
+      copyReport: document.getElementById("copy-report")
+    };
+
+    const state = {
+      logEntries: [],
+      currentReport: null
+    };
+
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeRegExp(value) {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function buildPhraseRegex(phrase, flags = "i") {
+      const trimmed = phrase.trim();
+      const escaped = escapeRegExp(trimmed).replace(/\s+/g, "\\s+");
+      const prefix = /^\w/.test(trimmed) ? "\\b" : "";
+      const suffix = /\w$/.test(trimmed) ? "\\b" : "";
+      return new RegExp(`${prefix}${escaped}${suffix}`, flags);
+    }
+
+    function hasPhrase(text, phrase) {
+      return buildPhraseRegex(phrase).test(text);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function formatSigned(value) {
+      if (value > 0) return `+${value}`;
+      if (value < 0) return `${value}`;
+      return "0";
+    }
+
+    function pluralize(count, singular, plural = `${singular}s`) {
+      return `${count} ${count === 1 ? singular : plural}`;
+    }
+
+    function normalizeWhitespace(text) {
+      return text
+        .replace(/\r/g, "")
+        .replace(/\t/g, " ")
+        .replace(/[ ]{2,}/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function extractDomain(url) {
+      if (!url) return "";
+      try {
+        const parsed = new URL(url.trim());
+        return parsed.hostname.replace(/^www\./i, "").toLowerCase();
+      } catch {
+        return "";
+      }
+    }
+
+    function domainMatches(hostname, target) {
+      return hostname === target || hostname.endsWith(`.${target}`);
+    }
+
+    function splitSentences(text) {
+      return text
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => sentence.trim())
+        .filter(Boolean);
+    }
+
+    function tokenize(text) {
+      return text.toLowerCase().match(/[a-z][a-z'-]{2,}/g) || [];
+    }
+
+    function unique(values) {
+      return [...new Set(values)];
+    }
+
+    function inferHeadline(text) {
+      const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+      const firstLine = lines[0] || "";
+      if (firstLine && firstLine.length <= 140) return firstLine;
+      const firstSentence = splitSentences(text)[0] || "";
+      if (firstSentence.length <= 140) return firstSentence;
+      return firstSentence.split(" ").slice(0, 14).join(" ") + "...";
+    }
+
+    function extractKeywords(text) {
+      const words = tokenize(text);
+      const counts = new Map();
+      for (const word of words) {
+        if (STOPWORDS.has(word) || word.length < 4) continue;
+        counts.set(word, (counts.get(word) || 0) + 1);
+      }
+
+      return [...counts.entries()]
+        .sort((a, b) => {
+          if (b[1] !== a[1]) return b[1] - a[1];
+          return a[0].localeCompare(b[0]);
+        })
+        .slice(0, 8)
+        .map(([word]) => word);
+    }
+
+    function extractEntities(text) {
+      const matches = text.match(/\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}|[A-Z]{2,})\b/g) || [];
+      return unique(
+        matches
+          .map((entity) => entity.trim())
+          .filter((entity) => entity.length > 2)
+          .filter((entity) => !["The", "This", "That", "According"].includes(entity))
+      ).slice(0, 14);
+    }
+
+    function countPatternMatches(text, pattern) {
+      const matches = text.match(pattern);
+      return matches ? matches.length : 0;
+    }
+
+    function countPhraseHits(text, phrases) {
+      return phrases.reduce((total, phrase) => total + (hasPhrase(text, phrase) ? 1 : 0), 0);
+    }
+
+    function findTriggeredPhrases(text, phrases) {
+      return phrases.filter((phrase) => hasPhrase(text, phrase));
+    }
+
+    function detectTopics(text) {
+      const scored = Object.entries(TOPIC_MAP).map(([topic, phrases]) => {
+        const score = phrases.reduce((sum, phrase) => sum + (hasPhrase(text, phrase) ? 1 : 0), 0);
+        return { topic, score };
+      });
+
+      return scored
+        .filter((entry) => entry.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+    }
+    function analyzeDomain(domain) {
+      if (!domain) {
+        return {
+          score: -4,
+          label: "No parseable domain",
+          reason: "The URL could not be parsed, so TruthLens could not give the source any trust bonus.",
+          matchedSource: null
+        };
+      }
+
+      for (const [trustedDomain, config] of Object.entries(TRUSTED_DOMAINS)) {
+        if (domainMatches(domain, trustedDomain)) {
+          return {
+            score: config.score,
+            label: `Trusted outlet: ${config.name}`,
+            reason: `${config.name} is in the tracked trusted-source list, so the article gets a strong domain credibility boost.`,
+            matchedSource: config.name
+          };
+        }
+      }
+
+      for (const [untrustedDomain, config] of Object.entries(UNTRUSTED_DOMAINS)) {
+        if (domainMatches(domain, untrustedDomain)) {
+          return {
+            score: config.score,
+            label: `Untrusted outlet: ${config.name}`,
+            reason: `${config.name} is on the comparison list of explicitly untrusted domains, so the article takes a sharp domain credibility penalty.`,
+            matchedSource: config.name
+          };
+        }
+      }
+
+      if (/\.(info|xyz|buzz|top|click)$/i.test(domain)) {
+        return {
+          score: -10,
+          label: "Suspicious generic domain",
+          reason: "The domain uses a pattern often seen on low-reputation or throwaway publishing sites, so the score is nudged downward.",
+          matchedSource: null
+        };
+      }
+
+      return {
+        score: 0,
+        label: "Unknown domain",
+        reason: "The source domain is not in the trusted or untrusted comparison lists, so TruthLens leaves the baseline unchanged here.",
+        matchedSource: null
+      };
+    }
+
+    function analyzeClickbait(text) {
+      const triggered = findTriggeredPhrases(text, CLICKBAIT_TERMS);
+      const capsWords = countPatternMatches(text, CAPS_PATTERN);
+      const excessivePunctuation = countPatternMatches(text, EXCESS_PUNCT_PATTERN);
+      const vagueHits = countPhraseHits(text, VAGUE_PHRASES);
+
+      const triggerPenalty = Math.min(14, triggered.length * 3);
+      const capsPenalty = Math.min(3, Math.floor(capsWords / 2));
+      const punctuationPenalty = Math.min(3, excessivePunctuation * 2);
+      const vaguePenalty = Math.min(4, vagueHits);
+      const score = -clamp(triggerPenalty + capsPenalty + punctuationPenalty + vaguePenalty, 0, 20);
+
+      const reasons = [];
+      if (triggered.length) reasons.push(`${pluralize(triggered.length, "clickbait trigger")} detected`);
+      if (capsWords) reasons.push(`${pluralize(capsWords, "ALL CAPS word")} detected`);
+      if (excessivePunctuation) reasons.push(`${pluralize(excessivePunctuation, "punctuation burst")} detected`);
+      if (vagueHits) reasons.push(`${pluralize(vagueHits, "vague attribution phrase")} amplified the risk`);
+      if (!reasons.length) reasons.push("No strong clickbait markers were found");
+
+      return {
+        score,
+        triggered,
+        capsWords,
+        excessivePunctuation,
+        vagueHits,
+        reason: reasons.join("; ") + "."
+      };
+    }
+
+    function analyzeTextQuality(text, sentences) {
+      const wordCount = tokenize(text).length;
+      const paragraphCount = text.split(/\n\s*\n/).filter(Boolean).length || 1;
+      const averageSentenceLength = sentences.length
+        ? Math.round(wordCount / sentences.length)
+        : wordCount;
+      const capsWords = countPatternMatches(text, CAPS_PATTERN);
+      const excessivePunctuation = countPatternMatches(text, EXCESS_PUNCT_PATTERN);
+
+      let score = 0;
+
+      if (wordCount >= 260 && wordCount <= 1500) score += 7;
+      else if (wordCount >= 160) score += 3;
+      else if (wordCount < 120) score -= 8;
+      else score -= 2;
+
+      if (paragraphCount >= 3) score += 3;
+      else if (paragraphCount === 1) score -= 2;
+
+      if (averageSentenceLength >= 10 && averageSentenceLength <= 28) score += 4;
+      else if (averageSentenceLength > 40 || averageSentenceLength < 6) score -= 4;
+
+      if (!capsWords) score += 1;
+      else score -= Math.min(4, Math.ceil(capsWords / 3));
+
+      if (!excessivePunctuation) score += 1;
+      else score -= Math.min(4, excessivePunctuation * 2);
+
+      score = clamp(score, -16, 16);
+
+      const reasons = [
+        `${pluralize(wordCount, "word")}`,
+        `${pluralize(paragraphCount, "paragraph")}`,
+        `average sentence length: ${averageSentenceLength} words`
+      ];
+
+      if (capsWords) reasons.push(`${pluralize(capsWords, "ALL CAPS word")} weakened readability`);
+      if (excessivePunctuation) reasons.push(`${pluralize(excessivePunctuation, "punctuation burst")} hurt polish`);
+
+      return {
+        score,
+        wordCount,
+        paragraphCount,
+        averageSentenceLength,
+        reason: reasons.join("; ") + "."
+      };
+    }
+
+    function analyzeFactIndicators(text, entities) {
+      const dates = text.match(DATE_PATTERN) || [];
+      const stats = text.match(STATS_PATTERN) || [];
+      const attributionHits = countPhraseHits(text, ATTRIBUTION_PATTERNS);
+      const vagueHits = countPhraseHits(text, VAGUE_PHRASES);
+      const directQuotes = (text.match(/"[^"]{8,}"/g) || []).length;
+
+      const entityBoost = Math.min(8, entities.length);
+      const dateBoost = Math.min(4, dates.length * 2);
+      const statsBoost = Math.min(4, stats.length);
+      const attributionBoost = Math.min(4, attributionHits + directQuotes);
+      const vaguePenalty = Math.min(8, vagueHits * 2);
+      const score = clamp(entityBoost + dateBoost + statsBoost + attributionBoost - vaguePenalty, -20, 20);
+
+      const reasons = [];
+      if (entities.length) reasons.push(`${pluralize(entities.length, "named entity")} found`);
+      if (dates.length) reasons.push(`${pluralize(dates.length, "date")} found`);
+      if (stats.length) reasons.push(`${pluralize(stats.length, "statistical reference")} found`);
+      if (attributionHits || directQuotes) reasons.push(`${pluralize(attributionHits + directQuotes, "explicit attribution cue")} found`);
+      if (vagueHits) reasons.push(`${pluralize(vagueHits, "vague attribution phrase")} reduced confidence`);
+      if (!reasons.length) reasons.push("Very few concrete factual anchors were detected");
+
+      return {
+        score,
+        dates,
+        stats,
+        attributionHits,
+        vagueHits,
+        directQuotes,
+        reason: reasons.join("; ") + "."
+      };
+    }
+
+    function simulateSourceMatches(article, domainAnalysis, clickbaitAnalysis, textQuality, factAnalysis, topics) {
+      const topicNames = topics.map((entry) => entry.topic);
+      const isIndiaFocused = topicNames.includes("india");
+      const specificity = clamp(
+        (factAnalysis.score > 0 ? factAnalysis.score : 0) +
+        Math.max(0, textQuality.score) +
+        Math.min(6, article.entities.length) -
+        Math.abs(clickbaitAnalysis.score),
+        0,
+        30
+      );
+
+      const matches = [];
+      const nonMatches = [];
+
+      for (const source of SOURCE_CATALOG) {
+        let confidence = 0;
+        let reason = "";
+        const directDomainMatch = domainMatches(article.domain, source.domain);
+
+        if (directDomainMatch) {
+          confidence = 0.99;
+          reason = "Direct domain match from the submitted URL.";
+        } else {
+          const topicOverlap = source.topics.filter((topic) => topicNames.includes(topic)).length;
+          const indiaBoost = isIndiaFocused && source.topics.includes("india") ? 0.18 : 0;
+          const trustBoost = source.trust === "trusted"
+            ? Math.max(0, factAnalysis.score) / 40 + Math.max(0, textQuality.score) / 50
+            : Math.abs(clickbaitAnalysis.score) / 30 + factAnalysis.vagueHits / 15;
+          const clickbaitDrag = source.trust === "trusted" ? Math.abs(clickbaitAnalysis.score) / 28 : 0;
+          const domainDrag = source.trust === "trusted" ? Math.max(0, -domainAnalysis.score) / 40 : 0;
+
+          confidence =
+            topicOverlap * 0.17 +
+            specificity / 70 +
+            indiaBoost +
+            trustBoost -
+            clickbaitDrag -
+            domainDrag;
+
+          if (source.trust === "untrusted") {
+            confidence += topicNames.includes("entertainment") || topicNames.includes("crime") ? 0.08 : 0;
+          }
+
+          if (!topicOverlap && source.trust === "trusted") {
+            confidence -= 0.12;
+          }
+
+          confidence = clamp(confidence, 0, 0.96);
+
+          if (source.trust === "trusted") {
+            if (topicOverlap >= 2) {
+              reason = "Strong topic overlap with a tracked trusted outlet plus concrete factual anchors made this story look broadly reportable.";
+            } else if (topicOverlap === 1) {
+              reason = "The article aligns with one of this outlet's regular coverage areas and includes enough specifics to suggest plausible wider coverage.";
+            } else {
+              reason = "The article lacked enough topic overlap or factual specificity to strongly suggest coverage here.";
+            }
+          } else {
+            reason = "The article's tone and weaker sourcing cues make it more compatible with a low-trust viral outlet profile.";
+          }
+        }
+
+        const threshold = source.trust === "trusted" ? 0.47 : 0.52;
+        const record = { ...source, confidence, reason };
+        if (confidence >= threshold) matches.push(record);
+        else nonMatches.push(record);
+      }
+
+      const trustedMatches = matches.filter((match) => match.trust === "trusted")
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 6);
+      const untrustedMatches = matches.filter((match) => match.trust === "untrusted")
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 2);
+
+      let score = 0;
+      let reason = "";
+
+      if (trustedMatches.length >= 3) {
+        score = 22;
+        reason = `${trustedMatches.length} trusted outlets plausibly align with the story, which is the strongest cross-source coverage signal in this model.`;
+      } else if (trustedMatches.length === 2) {
+        score = 14;
+        reason = "Two trusted outlets plausibly align with the story, giving a meaningful but not top-tier corroboration boost.";
+      } else if (trustedMatches.length === 1) {
+        score = 6;
+        reason = "One trusted outlet plausibly aligns with the story, which is a mild positive corroboration signal.";
+      } else if (untrustedMatches.length > 0) {
+        score = -10;
+        reason = "Only low-trust outlets appear compatible with the article's tone and structure, which weakens credibility.";
+      } else {
+        score = -8;
+        reason = "No tracked outlet profiles aligned strongly enough with the story, so the article loses points for lack of corroboration.";
+      }
+
+      if (trustedMatches.length > 0 && untrustedMatches.length > 0) {
+        score -= 4;
+        reason += " The match pattern is mixed because some low-trust outlet profiles also fit the story.";
+      }
+
+      return {
+        score: clamp(score, -22, 22),
+        trustedMatches,
+        untrustedMatches,
+        nonMatches: nonMatches.sort((a, b) => b.confidence - a.confidence),
+        reason
+      };
+    }
+
+    function getVerdict(score) {
+      if (score >= 70) {
+        return { label: "High Credibility", key: "high", note: "More credibility signals than risk signals were detected." };
+      }
+      if (score >= 40) {
+        return { label: "Medium Credibility", key: "medium", note: "The article has mixed signals and should be treated cautiously." };
+      }
+      return { label: "Low Credibility", key: "low", note: "The article shows multiple credibility risks and weak factual support." };
+    }
+
+    function generateBrief(article, crossSource, clickbaitAnalysis, factAnalysis, verdict, topics) {
+      const headline = inferHeadline(article.text);
+      const topicLabel = topics[0] ? topics[0].topic : "general news";
+      const matchedSources = crossSource.trustedMatches.map((source) => source.name);
+
+      let opening = `${headline} reads like a ${topicLabel.replace(/_/g, " ")} article`;
+      if (article.domain) opening += ` published on ${article.domain}`;
+      opening += ".";
+
+      const toneLine =
+        clickbaitAnalysis.score < -10
+          ? "Its language is noticeably sensational, which drags credibility down."
+          : clickbaitAnalysis.score < 0
+            ? "Its language includes a few sensational cues, but not enough to dominate the report."
+            : "Its tone stays comparatively measured, which helps credibility.";
+
+      const factLine =
+        factAnalysis.score > 10
+          ? "The text contains several factual anchors such as named entities, dates, or statistics."
+          : factAnalysis.score > 0
+            ? "The article contains some concrete factual anchors, though they are not overwhelming."
+            : "The article offers limited concrete factual anchoring, which weakens trust.";
+
+      const sourceLine = matchedSources.length
+        ? `TruthLens found simulated alignment with ${matchedSources.join(", ")}.`
+        : "TruthLens did not find strong simulated alignment with any tracked trusted outlet.";
+
+      return `${opening} ${toneLine} ${factLine} ${sourceLine} Final verdict: ${verdict.label.toLowerCase()}.`;
+    }
+
+    function buildHighlightedArticle(text, clickbaitAnalysis, factAnalysis) {
+      let highlighted = escapeHtml(text);
+      const replacements = [
+        ...clickbaitAnalysis.triggered.map((phrase) => ({ phrase, className: "flag-red" })),
+        ...findTriggeredPhrases(text, VAGUE_PHRASES).map((phrase) => ({ phrase, className: "flag-amber" })),
+        ...unique([
+          ...factAnalysis.dates.slice(0, 12),
+          ...factAnalysis.stats.slice(0, 10),
+          ...ATTRIBUTION_PATTERNS.filter((phrase) => hasPhrase(text, phrase))
+        ]).map((phrase) => ({ phrase, className: "flag-green" }))
+      ];
+
+      replacements
+        .sort((a, b) => b.phrase.length - a.phrase.length)
+        .forEach(({ phrase, className }) => {
+          const matcher = buildPhraseRegex(phrase, "gi");
+          highlighted = highlighted.replace(matcher, (match) => `<mark class="${className}">${match}</mark>`);
+        });
+
+      return highlighted;
+    }
+
+    function buildArticleModel(url, text) {
+      const cleanText = normalizeWhitespace(text);
+      return {
+        url: url.trim(),
+        domain: extractDomain(url),
+        text: cleanText,
+        sentences: splitSentences(cleanText),
+        headline: inferHeadline(cleanText),
+        keywords: extractKeywords(cleanText),
+        entities: extractEntities(cleanText),
+        topics: detectTopics(cleanText)
+      };
+    }
+    function setActiveScreen(screenNumber) {
+      elements.progressCards.forEach((card, index) => {
+        card.classList.toggle("active", index + 1 === screenNumber);
+        card.classList.toggle("done", index + 1 < screenNumber);
+      });
+
+      elements.screenInput.classList.toggle("active", screenNumber === 1);
+      elements.screenProcessing.classList.toggle("active", screenNumber === 2);
+      elements.screenResults.classList.toggle("active", screenNumber === 3);
+    }
+
+    function renderPipeline() {
+      elements.pipelineSteps.innerHTML = PIPELINE_STEPS.map((step, index) => `
+        <div class="pipeline-step" data-step="${index}">
+          <div class="pipeline-icon">${index + 1}</div>
+          <div class="pipeline-meta">
+            <strong>${step.title}</strong>
+            <span>${step.description}</span>
+          </div>
+          <div class="pipeline-status">Queued</div>
+        </div>
+      `).join("");
+    }
+
+    function activatePipelineStep(index, statusText) {
+      const nodes = Array.from(elements.pipelineSteps.querySelectorAll(".pipeline-step"));
+      nodes.forEach((node, position) => {
+        node.classList.toggle("active", position === index);
+        node.classList.toggle("done", position < index);
+        const status = node.querySelector(".pipeline-status");
+        if (position < index) status.textContent = "Completed";
+        if (position === index) status.textContent = statusText;
+        if (position > index) status.textContent = "Queued";
+      });
+      elements.progressFill.style.width = `${((index + 1) / PIPELINE_STEPS.length) * 100}%`;
+    }
+
+    function pushLog(label, message, tone = "") {
+      const timestamp = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+
+      const entry = { timestamp, label, message, tone };
+      state.logEntries.push(entry);
+
+      const line = document.createElement("div");
+      line.className = `log-line ${tone}`.trim();
+      line.innerHTML = `
+        <span class="log-time">${timestamp}</span>
+        <span class="log-label">[${escapeHtml(label)}]</span>
+        <span>${escapeHtml(message)}</span>
+      `;
+      elements.liveLog.appendChild(line);
+      elements.liveLog.scrollTop = elements.liveLog.scrollHeight;
+    }
+
+    function setLiveScore(value) {
+      elements.liveScore.textContent = value;
+      const verdict = getVerdict(value);
+      elements.liveScoreLabel.textContent = verdict.label;
+    }
+
+    function renderResults(report) {
+      const verdict = report.verdict;
+      elements.verdictPill.className = `verdict-pill ${verdict.key}`;
+      elements.verdictPill.textContent = verdict.label;
+      elements.finalScore.textContent = report.finalScore;
+      elements.resultHeadline.textContent = report.article.headline || "Credibility report";
+      elements.analysisBrief.textContent = report.brief;
+
+      elements.keywordRow.innerHTML = report.article.keywords.length
+        ? report.article.keywords.map((keyword) => `<span class="chip">${escapeHtml(keyword)}</span>`).join("")
+        : `<div class="empty-state">No strong keywords were extracted.</div>`;
+
+      const allMatches = [...report.crossSource.trustedMatches, ...report.crossSource.untrustedMatches];
+      elements.matchedSources.innerHTML = allMatches.length
+        ? allMatches.map((source) => `<span class="source-chip ${source.trust}">${escapeHtml(source.name)}</span>`).join("")
+        : `<div class="empty-state">No tracked source profiles matched the story strongly enough.</div>`;
+
+      const modules = report.modules;
+      elements.scoreBreakdown.innerHTML = modules.map((module) => {
+        const width = Math.max(8, Math.min(100, ((module.score + module.maxAbs) / (module.maxAbs * 2)) * 100));
+        const deltaClass = module.score > 0 ? "pos" : module.score < 0 ? "neg" : "neutral";
+        return `
+          <div class="breakdown-card">
+            <div class="breakdown-head">
+              <strong>${escapeHtml(module.label)}</strong>
+              <span class="delta ${deltaClass}">${formatSigned(module.score)}</span>
+            </div>
+            <div class="mini-bar"><span style="width:${width}%"></span></div>
+            <p class="subtle">${escapeHtml(module.reason)}</p>
+          </div>
+        `;
+      }).join("");
+
+      elements.calculationDetail.innerHTML = modules.map((module) => `
+        <div class="reason-card">
+          <strong>${escapeHtml(module.label)}: ${formatSigned(module.score)}</strong>
+          <div>${escapeHtml(module.reason)}</div>
+        </div>
+      `).join("");
+
+      const sourceCards = [
+        ...report.crossSource.trustedMatches.map((source) => `
+          <div class="reason-card match">
+            <strong>${escapeHtml(source.name)} matched (${Math.round(source.confidence * 100)}%)</strong>
+            <div>${escapeHtml(source.reason)}</div>
+          </div>
+        `),
+        ...report.crossSource.untrustedMatches.map((source) => `
+          <div class="reason-card match">
+            <strong>${escapeHtml(source.name)} matched (${Math.round(source.confidence * 100)}%)</strong>
+            <div>${escapeHtml(source.reason)}</div>
+          </div>
+        `),
+        ...report.crossSource.nonMatches.slice(0, 5).map((source) => `
+          <div class="reason-card nomatch">
+            <strong>${escapeHtml(source.name)} did not match (${Math.round(source.confidence * 100)}%)</strong>
+            <div>${escapeHtml(source.reason)}</div>
+          </div>
+        `)
+      ];
+      elements.sourceDetail.innerHTML = sourceCards.join("") || `<div class="empty-state">No source reasoning was generated.</div>`;
+      elements.highlightedArticle.innerHTML = report.highlightedArticle;
+      elements.finalLog.innerHTML = state.logEntries.map((entry) => `
+        <div class="reason-card">
+          <strong>${escapeHtml(entry.timestamp)} | ${escapeHtml(entry.label)}</strong>
+          <div>${escapeHtml(entry.message)}</div>
+        </div>
+      `).join("");
+    }
+
+    async function runAnalysis(url, text) {
+      state.logEntries = [];
+      elements.liveLog.innerHTML = "";
+      renderPipeline();
+      elements.progressFill.style.width = "0%";
+      setLiveScore(50);
+      elements.processingSummary.textContent = "TruthLens is preparing the article for analysis.";
+
+      const article = buildArticleModel(url, text);
+      let runningScore = 50;
+      const moduleRows = [];
+
+      activatePipelineStep(0, "Cleaning");
+      pushLog("parse", `Captured ${article.sentences.length} sentences and inferred headline: "${article.headline}".`);
+      elements.processingSummary.textContent = "Cleaning the article and locating headline clues.";
+      await delay(550);
+
+      activatePipelineStep(1, "Extracting");
+      pushLog("topics", `Extracted keywords: ${article.keywords.slice(0, 5).join(", ") || "none"}.`);
+      pushLog("entities", `Detected ${pluralize(article.entities.length, "named entity")} and ${pluralize(article.topics.length, "topic signal")}.`);
+      elements.processingSummary.textContent = "Mapping keywords, named entities, and likely coverage themes.";
+      await delay(700);
+
+      activatePipelineStep(2, "Scoring");
+      const domainAnalysis = analyzeDomain(article.domain);
+      runningScore += domainAnalysis.score;
+      setLiveScore(clamp(runningScore, 0, 100));
+      pushLog("domain", `${domainAnalysis.label}. ${domainAnalysis.reason}`, domainAnalysis.score < 0 ? "danger" : "");
+      moduleRows.push({ label: "Source domain credibility", score: domainAnalysis.score, maxAbs: 28, reason: domainAnalysis.reason });
+      elements.processingSummary.textContent = "Evaluating the credibility of the source domain.";
+      await delay(700);
+
+      activatePipelineStep(3, "Comparing");
+      const clickbaitAnalysis = analyzeClickbait(article.text);
+      const textQuality = analyzeTextQuality(article.text, article.sentences);
+      const factAnalysis = analyzeFactIndicators(article.text, article.entities);
+      const crossSource = simulateSourceMatches(article, domainAnalysis, clickbaitAnalysis, textQuality, factAnalysis, article.topics);
+      runningScore += crossSource.score;
+      setLiveScore(clamp(runningScore, 0, 100));
+      pushLog("sources", crossSource.reason, crossSource.score < 0 ? "warn" : "");
+      moduleRows.push({ label: "Multi-source match", score: crossSource.score, maxAbs: 22, reason: crossSource.reason });
+      elements.processingSummary.textContent = "Estimating which tracked outlets would likely carry the same story.";
+      await delay(850);
+
+      activatePipelineStep(4, "Scanning");
+      runningScore += clickbaitAnalysis.score;
+      setLiveScore(clamp(runningScore, 0, 100));
+      pushLog("clickbait", clickbaitAnalysis.reason, clickbaitAnalysis.score < 0 ? "warn" : "");
+      moduleRows.push({ label: "Clickbait language", score: clickbaitAnalysis.score, maxAbs: 20, reason: clickbaitAnalysis.reason });
+      await delay(520);
+
+      runningScore += textQuality.score;
+      setLiveScore(clamp(runningScore, 0, 100));
+      pushLog("quality", textQuality.reason, textQuality.score < 0 ? "warn" : "");
+      moduleRows.push({ label: "Text quality", score: textQuality.score, maxAbs: 16, reason: textQuality.reason });
+      await delay(520);
+
+      runningScore += factAnalysis.score;
+      setLiveScore(clamp(runningScore, 0, 100));
+      pushLog("facts", factAnalysis.reason, factAnalysis.score < 0 ? "warn" : "");
+      moduleRows.push({ label: "Fact indicators", score: factAnalysis.score, maxAbs: 20, reason: factAnalysis.reason });
+      elements.processingSummary.textContent = "Scanning for sensational language, writing quality, and factual specificity.";
+      await delay(760);
+
+      activatePipelineStep(5, "Finalizing");
+      const finalScore = clamp(runningScore, 0, 100);
+      const verdict = getVerdict(finalScore);
+      const brief = generateBrief(article, crossSource, clickbaitAnalysis, factAnalysis, verdict, article.topics);
+      pushLog("verdict", `Final score locked at ${finalScore}/100 (${verdict.label}).`);
+      elements.processingSummary.textContent = "Building the final report and transparency panels.";
+      await delay(720);
+
+      const report = {
+        article,
+        finalScore,
+        verdict,
+        brief,
+        modules: moduleRows,
+        crossSource,
+        highlightedArticle: buildHighlightedArticle(article.text, clickbaitAnalysis, factAnalysis)
+      };
+
+      state.currentReport = report;
+      renderResults(report);
+    }
+
+    function buildClipboardReport(report) {
+      const matches = [...report.crossSource.trustedMatches, ...report.crossSource.untrustedMatches]
+        .map((source) => source.name)
+        .join(", ") || "None";
+      const breakdown = report.modules
+        .map((module) => `- ${module.label}: ${formatSigned(module.score)} | ${module.reason}`)
+        .join("\n");
+
+      return [
+        "TruthLens Credibility Report",
+        `Headline: ${report.article.headline}`,
+        `URL: ${report.article.url || "Not provided"}`,
+        `Score: ${report.finalScore}/100`,
+        `Verdict: ${report.verdict.label}`,
+        "",
+        report.brief,
+        "",
+        `Matched sources: ${matches}`,
+        "",
+        "Breakdown:",
+        breakdown,
+        "",
+        "Disclosure: This standalone build uses simulated source matching rather than live web browsing."
+      ].join("\n");
+    }
+
+    elements.form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const url = elements.articleUrl.value.trim();
+      const text = elements.articleText.value.trim();
+
+      if (!text || text.length < 180) {
+        elements.formMessage.textContent = "Paste the full article text so TruthLens has enough evidence to evaluate.";
+        elements.formMessage.className = "message error";
+        return;
+      }
+
+      elements.formMessage.textContent = "";
+      elements.formMessage.className = "message";
+      elements.runButton.disabled = true;
+      setActiveScreen(2);
+      await runAnalysis(url, text);
+      setActiveScreen(3);
+      elements.runButton.disabled = false;
+    });
+
+    elements.demoButton.addEventListener("click", () => {
+      elements.articleUrl.value = demoArticle.url;
+      elements.articleText.value = demoArticle.text;
+      elements.formMessage.textContent = "Demo article loaded. Run the checker to see the full flow.";
+      elements.formMessage.className = "message";
+    });
+
+    elements.newCheck.addEventListener("click", () => {
+      setActiveScreen(1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    elements.copyReport.addEventListener("click", async () => {
+      if (!state.currentReport) return;
+      try {
+        await navigator.clipboard.writeText(buildClipboardReport(state.currentReport));
+        elements.copyReport.textContent = "Copied";
+      } catch {
+        elements.copyReport.textContent = "Copy failed";
+      }
+
+      setTimeout(() => {
+        elements.copyReport.textContent = "Copy report";
+      }, 1400);
+    });
+
+    renderPipeline();
+  </script>
+</body>
+</html>
