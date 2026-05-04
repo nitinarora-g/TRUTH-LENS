@@ -316,6 +316,11 @@
       gap: 20px;
     }
 
+    .entry-layout {
+      width: min(820px, 100%);
+      margin: 0 auto;
+    }
+
     .panel {
       border-radius: var(--radius-xl);
       padding: 26px;
@@ -1186,16 +1191,7 @@
         <header class="hero">
           <div class="eyebrow">TruthLens | Decision-support for news readers</div>
           <h1>See how credible a story really looks.</h1>
-          <p>
-            TruthLens is a single-file news credibility checker. Paste an article URL and its full text,
-            then watch the article move through domain trust, simulated multi-source verification,
-            clickbait detection, and fact-signal analysis before a final score is issued.
-          </p>
-          <div class="hero-metrics">
-            <div class="metric-pill">0-100 credibility score</div>
-            <div class="metric-pill">21 clickbait triggers scanned</div>
-            <div class="metric-pill">Transparent decision log</div>
-          </div>
+          <p>Paste the article URL and full text, then start the credibility check.</p>
         </header>
 
         <section class="progress-rail" aria-label="TruthLens progress">
@@ -1222,72 +1218,33 @@
           </div>
         </section>
 
-        <div class="grid-2">
+        <div class="entry-layout">
           <section class="panel">
-          <div class="panel-head">
-            <h2>Check an article</h2>
-            <p>Paste the article URL and the full article text. TruthLens works best when it can inspect the entire article, not just the headline.</p>
-          </div>
-
-          <form id="credibility-form">
-            <label for="article-url">
-              Article URL
-              <input id="article-url" name="article-url" type="url" placeholder="https://example.com/news-story" autocomplete="off">
-              <p class="hint">The URL is used for source-domain credibility and to identify whether it matches any tracked outlets.</p>
-            </label>
-
-            <label for="article-text">
-              Full article text
-              <textarea id="article-text" name="article-text" placeholder="Paste the article text here..."></textarea>
-              <p class="hint">TruthLens scans named sources, dates, statistics, ALL CAPS usage, vague attribution, punctuation abuse, and clickbait language.</p>
-            </label>
-
-            <div class="form-actions">
-              <button class="button secondary" id="demo-button" type="button">Load demo article</button>
-              <button class="button primary" id="run-button" type="submit">Initiate Credibility Check</button>
+            <div class="panel-head">
+              <h2>Check an article</h2>
+              <p>Paste the original link and the full article text.</p>
             </div>
-            <p id="form-message" class="message" aria-live="polite"></p>
-          </form>
+
+            <form id="credibility-form">
+              <label for="article-url">
+                Article URL
+                <input id="article-url" name="article-url" type="url" placeholder="https://example.com/news-story" autocomplete="off">
+                <p class="hint">Used for the source-domain check.</p>
+              </label>
+
+              <label for="article-text">
+                Full article text
+                <textarea id="article-text" name="article-text" placeholder="Paste the article text here..."></textarea>
+                <p class="hint">Paste the complete article so the score has enough context.</p>
+              </label>
+
+              <div class="form-actions">
+                <button class="button secondary" id="demo-button" type="button">Load demo article</button>
+                <button class="button primary" id="run-button" type="submit">Initiate Credibility Check</button>
+              </div>
+              <p id="form-message" class="message" aria-live="polite"></p>
+            </form>
           </section>
-
-          <aside class="panel">
-          <div class="panel-head">
-            <h2>What this build does</h2>
-            <p>The checker mirrors the product flow you described: one file, no setup, three screens, transparent scoring, and clear disclosures about its limitations.</p>
-          </div>
-
-          <div class="feature-list">
-            <div class="feature-card">
-              <strong>AI-style article brief</strong>
-              <p>The checker extracts the likely headline, topic, tone, and keywords before the score is finalized so users understand what the article appears to claim.</p>
-            </div>
-            <div class="feature-card">
-              <strong>Multi-module scoring</strong>
-              <p>Five modules adjust a neutral score of 50: source-domain credibility, cross-source coverage, clickbait language, text quality, and fact indicators.</p>
-            </div>
-            <div class="feature-card">
-              <strong>Only matched sources shown up front</strong>
-              <p>The main report lists only the outlets that appear to match. A deeper panel explains why other sources were not considered a match.</p>
-            </div>
-            <div class="feature-card">
-              <strong>Flagged language in context</strong>
-              <p>Clickbait triggers are highlighted in red, vague attribution in amber, and fact-supporting signals like dates and explicit attribution in green.</p>
-            </div>
-          </div>
-
-          <div class="score-system" aria-label="Scoring system overview">
-            <div class="score-row"><span>Starting score</span><em>50 neutral</em></div>
-            <div class="score-row"><span>Source domain credibility</span><em>up to +/-28</em></div>
-            <div class="score-row"><span>Multi-source coverage</span><em>up to +/-22</em></div>
-            <div class="score-row"><span>Clickbait language</span><em>up to -20</em></div>
-            <div class="score-row"><span>Text quality</span><em>up to +/-16</em></div>
-            <div class="score-row"><span>Fact indicators</span><em>up to +/-20</em></div>
-          </div>
-
-          <div class="disclosure-box">
-            TruthLens does not browse the live web in this standalone build. Cross-source verification is a simulated judgment based on article content, topic fit, and factual specificity. It is meant to support human judgment, not replace it.
-          </div>
-          </aside>
         </div>
       </div>
     </section>
